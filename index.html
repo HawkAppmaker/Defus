@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DEFUSE | Tactical Neural Override</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --bg: #020617; --teal: #2dd4bf; --text: #f1f5f9; --red: #f43f5e; --card: #1e293b; --gold: #fbbf24; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { 
+            background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; overflow: hidden; touch-action: none; text-align: center; height: 100vh;
+        }
+        
+        /* SCREENS */
+        .screen { display: none; height: 100vh; width: 100vw; flex-direction: column; justify-content: center; align-items: center; position: absolute; padding: 30px; }
+        .active { display: flex; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* UI ELEMENTS */
+        .btn { 
+            background: var(--teal); color: var(--bg); border: none; padding: 22px; border-radius: 18px; 
+            width: 100%; max-width: 360px; font-weight: 900; font-size: 1.1rem; margin: 10px 0; 
+            cursor: pointer; z-index: 10; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .sos { background: var(--red); color: white; box-shadow: 0 0 30px rgba(244, 63, 94, 0.3); }
+        .secondary { background: none; border: 1px solid var(--teal); color: var(--teal); }
+        
+        /* MONETIZATION & TEASERS */
+        .support-link { margin-top: 20px; color: var(--gold); font-size: 0.8rem; font-weight: bold; text-decoration: none; border: 1px solid var(--gold); padding: 10px 20px; border-radius: 30px; }
+        .momentum-teaser { margin-top: 40px; padding: 15px; border-radius: 15px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); width: 100%; max-width: 320px; }
+
+        /* TOP BAR */
+        .top-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; z-index: 1000; }
+        .control-icon { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); }
+
+        /* VISUAL RESET ENGINE */
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; filter: contrast(1.1) brightness(1.1); }
+        #timer { position: absolute; top: 15%; font-size: 6rem; font-weight: 900; color: var(--teal); opacity: 0.1; z-index: 0; }
+        #visual-msg { color: var(--teal); letter-spacing: 3px; z-index: 10; font-weight: 900; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-overlay" style="display: none;">
+        <div class="top-bar">
+            <div id="vol-btn" class="control-icon" onclick="toggleAudio()" style="color: var(--teal);">🔊</div>
+            <div class="control-icon" onclick="exitAll()" style="color: var(--red);">✕</div>
+        </div>
+    </div>
+
+    <div id="home" class="screen active">
+        <h1 style="color: var(--teal); letter-spacing: 8px; font-weight: 900; margin-bottom: 0;">DEFUSE</h1>
+        <p style="opacity: 0.4; font-size: 0.7rem; margin-bottom: 30px; letter-spacing: 3px;">BIOLOGICAL OVERRIDE v1.4</p>
+        
+        <button class="btn sos" onclick="show('panic')">SYSTEM RED: PANIC</button>
+        <button class="btn" onclick="show('visual')">Visual & Binaural Reset</button>
+        <button class="btn secondary" onclick="show('sos')">Vagus Pacer</button>
+
+        <a href="https://www.buymeacoffee.com/yourlink" target="_blank" class="support-link">☕ SUPPORT THE PROJECT</a>
+
+        <div class="momentum-teaser">
+            <span style="font-size: 0.6rem; opacity: 0.5; text-transform: uppercase;">Next Activation</span>
+            <p style="margin: 5px 0; font-weight: bold; color: var(--teal); opacity: 0.6;">MOMENTUM: FOCUS ENGINE</p>
+        </div>
+    </div>
+
+    <div id="panic" class="screen">
+        <h2 style="color: var(--red); letter-spacing: 2px;">NEURAL HIJACK</h2>
+        <div id="panic-task" style="background: var(--card); border: 2px solid var(--red); padding: 30px; border-radius: 20px; width: 100%; font-size: 1.4rem; font-weight: bold; margin: 20px 0;">Initializing...</div>
+        <button class="btn" onclick="nextPanicTask()">NEXT TASK</button>
+        <button class="btn secondary" onclick="exitAll()">STABILIZED</button>
+    </div>
+
+    <div id="visual" class="screen">
+        <canvas id="canvas"></canvas>
+        <div id="timer">60</div>
+        <div style="z-index:10; pointer-events:none; margin-top: -10vh;">
+            <h3 id="visual-msg">TRACE & FOLLOW</h3>
+            <p style="opacity: 0.5; font-size: 0.8rem;">Sync your breath with the ring</p>
+        </div>
+    </div>
+
+    <div id="sos" class="screen">
+        <div id="pacer-circle" style="width:150px; height:150px; border:5px solid var(--teal); border-radius:50%; transition: 4s linear;"></div>
+        <h2 id="pacer-text" style="margin-top:40px;">READY</h2>
+    </div>
+
+    <div id="success" class="screen" style="background: radial-gradient(circle, #064e3b 0%, #020617 100%);">
+        <h1 style="color: var(--teal); letter-spacing: 4px; font-weight: 900;">NEUTRALIZED</h1>
+        <p id="success-quote" style="opacity: 0.8; font-style: italic; max-width: 280px; margin-bottom: 30px;"></p>
+        <button class="btn" onclick="show('home')" style="background:none; border: 1px solid white; color: white;">RETURN TO BASE</button>
+        <div style="margin-top: 20px;">
+            <p style="font-size: 0.7rem; opacity: 0.5;">Help keep this free for everyone:</p>
+            <a href="https://yourlink.com" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: bold;">Leave a Tip ⚡</a>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [], mouse = { x: null, y: null };
+        let timerVal = 60, timerInt, pacerInt, lastIdx = -1, pacerStart;
+        let audioCtx, leftOsc, rightOsc, binauralGain, isMuted = false;
+
+        const panicTasks = ["Spell 'CALM' backwards.", "What is 22 + 19?", "Find 3 RED items.", "Name 4 types of fruit.", "Subtract 7 from 50.", "Spell 'FOCUS' backwards."];
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('vol-btn');
+            if (isMuted) { binauralGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); btn.innerText = "🔇"; }
+            else { binauralGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.1); btn.innerText = "🔊"; }
+        }
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const s = audioCtx.createBufferSource(); s.buffer = audioCtx.createBuffer(1, 1, 22050); s.connect(audioCtx.destination); s.start(0);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function show(id) {
+            initAudio();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('ui-overlay').style.display = (id === 'visual' || id === 'sos' || id === 'panic') ? 'block' : 'none';
+            if (id === 'visual') startVisual();
+            if (id === 'panic') nextPanicTask();
+            if (id === 'sos') startPacer();
+        }
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() { this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height; this.size = 2; this.sx = (Math.random()-0.5)*0.7; this.sy = (Math.random()-0.5)*0.7; }
+            update() {
+                this.x += this.sx; this.y += this.sy;
+                if (mouse.x) {
+                    let dx = mouse.x - this.x, dy = mouse.y - this.y, dist = Math.sqrt(dx*dx+dy*dy);
+                    if (dist < 130) { let f = (130-dist)/130; this.x += dx*f*0.1; this.y += dy*f*0.1; this.alpha = 0.9; if (navigator.vibrate && Math.random() > 0.97) navigator.vibrate(5); }
+                }
+                if (this.x > canvas.width || this.x < 0) this.sx *= -1;
+                if (this.y > canvas.height || this.y < 0) this.sy *= -1;
+            }
+            draw() { ctx.fillStyle = `rgba(45, 212, 191, ${this.alpha || 0.25})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); this.alpha = 0.25; }
+        }
+
+        function startVisual() {
+            document.body.classList.add('visual-active');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            timerVal = 60; pacerStart = Date.now();
+            leftOsc = audioCtx.createOscillator(); rightOsc = audioCtx.createOscillator(); binauralGain = audioCtx.createGain();
+            leftOsc.frequency.value = 200; rightOsc.frequency.value = 210;
+            leftOsc.connect(binauralGain); rightOsc.connect(binauralGain); binauralGain.connect(audioCtx.destination);
+            binauralGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            if(!isMuted) binauralGain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 2);
+            leftOsc.start(); rightOsc.start();
+            particles = []; for (let i = 0; i < 45; i++) particles.push(new Particle());
+            animate();
+            timerInt = setInterval(() => { timerVal--; document.getElementById('timer').innerText = timerVal; if(timerVal <= 0) triggerSuccess(); }, 1000);
+        }
+
+        function animate() {
+            if (!document.body.classList.contains('visual-active')) return;
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.2)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            if (mouse.x) {
+                let elapsed = (Date.now() - pacerStart) % 12000;
+                let prog = elapsed < 4000 ? elapsed / 4000 : 1 - ((elapsed - 4000) / 8000);
+                document.getElementById('visual-msg').innerText = elapsed < 4000 ? "INHALE..." : "EXHALE SLOWLY...";
+                ctx.strokeStyle = elapsed < 4000 ? `rgba(45, 212, 191, 0.6)` : `rgba(30, 64, 175, 0.6)`;
+                ctx.lineWidth = 3; ctx.setLineDash([5, 10]);
+                ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 45 + (prog * 65), 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function exitAll() { 
+            document.body.classList.remove('visual-active'); clearInterval(timerInt); clearInterval(pacerInt);
+            if(binauralGain) { binauralGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); setTimeout(() => { leftOsc?.stop(); rightOsc?.stop(); }, 300); }
+            show('home');
+        }
+
+        function nextPanicTask() { let idx; do { idx = Math.floor(Math.random()*panicTasks.length); } while (idx === lastIdx); lastIdx = idx; document.getElementById('panic-task').innerText = panicTasks[idx]; if (navigator.vibrate) navigator.vibrate(40); }
+        function startPacer() { let phase = 0; const c = document.getElementById('pacer-circle'); const t = document.getElementById('pacer-text'); pacerInt = setInterval(() => { if (phase === 0) { c.style.transform = "scale(1.8)"; t.innerText = "INHALE"; phase = 1; } else { c.style.transform = "scale(0.8)"; t.innerText = "EXHALE"; phase = 0; } }, phase === 0 ? 4000 : 8000); }
+        function triggerSuccess() { exitAll(); document.getElementById('success-quote').innerText = "The spike has passed. You are back in control."; show('success'); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); }
+
+        window.addEventListener('touchstart', e => { mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; }, {passive:false});
+        window.addEventListener('touchmove', e => { mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; }, {passive:false});
+        window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
+    </script>
+</body>
+</html>
